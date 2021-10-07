@@ -54,11 +54,12 @@ void tablero_cb(GtkWidget *event_box, GdkEventButton *event, gpointer data){
 			mostrar_movimientos(moves,P,cantmove);
 			if (cantmove == 0){
 				Modo = 0;
+				cambiar_jugador();
 			}
 			verificar_ganador();
 		}
 		if (band == -1){
-
+			Modo = 0;
 		}
 
 	}
@@ -82,6 +83,14 @@ void mostrar_movimientos(struct movimiento moves[],struct posicion P,int cantmov
 		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/neutralsel.png");
 	}else if(tablero_paralelo [P.F][P.C] == ALBERTH || tablero_paralelo[P.F][P.C] == HOUSEC){
 		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/goalsel.png");
+	}
+}
+
+void cambiar_jugador(){
+	if (jugador == SUFFRAGETTO){
+		jugador = POLICIA;
+	}else{
+		jugador = SUFFRAGETTO;
 	}
 }
 
@@ -135,8 +144,7 @@ GtkWidget *crear_tablero_fichas(){
 	return eventbox;
 }
 
-GtkWidget obtener_img(char img){
-	GtkWidget *pixbuf;
+void obtener_img(GdkPixbuf *pixbuf,char img){
 	if(img == VACIO){
 					pixbuf = gdk_pixbuf_new_from_file("./img/vacio.png" , NULL);
 					pixbuf = gdk_pixbuf_scale_simple (pixbuf , pixel , pixel ,GDK_INTERP_BILINEAR);
@@ -169,7 +177,6 @@ GtkWidget obtener_img(char img){
 					pixbuf = gdk_pixbuf_new_from_file("./img/goal.png",NULL);
 					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
 				}
-	return *pixbuf;
 }
 
 void rescale_tablero(int opcion){
@@ -180,12 +187,12 @@ void rescale_tablero(int opcion){
 	if(opcion == 2){
 		pixel = pixel*1.35;
 	}
-	GtkWidget *pixbuf;
+	GdkPixbuf *pixbuf;
 	for (i = 0; i < 18; i++) {
 		for (j = 0; j < 18; j++) {
-			*pixbuf = obtener_img(tablero_fichas[i][j]);
+			obtener_img(pixbuf,tablero_fichas[i][j]);
 			gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(fichas),j,i)), pixbuf);
-			*pixbuf = obtener_img(tablero_paralelo[i][j]);
+			obtener_img(pixbuf,tablero_paralelo[i][j]);
 			gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),j,i)), pixbuf);
 		}
 	}
