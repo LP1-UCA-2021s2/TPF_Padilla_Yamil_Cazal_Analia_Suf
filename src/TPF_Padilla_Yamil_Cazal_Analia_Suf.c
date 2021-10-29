@@ -24,8 +24,10 @@ GtkWidget *fichas;
 
 void tablero_cb(GtkWidget *event_box, GdkEventButton *event, gpointer data){
 	guint i,j;
-	int cantmove, band;
+	int posmov;
+	static int cantmove;
 	static int Modo = 0;
+	static struct movimiento moves[8];
 	i = (GUINT_FROM_LE(event->y) / pixel);
 	j = (GUINT_FROM_LE(event->x) / pixel);
 	struct posicion P;
@@ -33,58 +35,50 @@ void tablero_cb(GtkWidget *event_box, GdkEventButton *event, gpointer data){
 	P.F = i;
 	P.C = j;
 	if (Modo == 0){
-	if (Es_ficha_suya(P,jugador)){
-		cantmove = guardar_movimientos(moves, P, -1);
-		mostrar_movimientos(moves,P,cantmove);
-		Pini.F = i;
-		Pini.C = j;
-		Modo = 1;
-	}else{
-
-		}
-	}
-	/*if (Modo == 1){
-		band = verificar_movimiento(moves,Pini,P, cantmove);
-		if(band == 1){
-			hacer_movimiento();
-			if(verificar_captura()){
-				hacer_captura();
-			}
+		if (Es_ficha_suya(P,jugador)){
 			cantmove = guardar_movimientos(moves, P, -1);
 			mostrar_movimientos(moves,P,cantmove);
-			if (cantmove == 0){
-				Modo = 0;
-				cambiar_jugador();
-			}
-			verificar_ganador();
+			Pini.F = i;
+			Pini.C = j;
+			Modo = 1;
+		}else{
+
 		}
-		if (band == -1){
-			Modo = 0;
+	}else{
+		if (Modo == 1){
+				posmov = verificar_movimiento(moves,Pini,P, cantmove);
+				if(posmov > -1){
+					hacer_movimiento(Pini,P);
+					if(verificar_captura(moves[posmov],tablero_fichas[Pini.F][Pini.C])){
+						hacer_captura(moves[posmov].FSaltada);
+					}
+					deseleccionar_mov(moves,Pini,cantmove);
+					cantmove = guardar_movimientos(moves, P, moves[posmov].Saltos);
+					mostrar_movimientos(moves,P,cantmove);
+					if (cantmove == 0){
+						Modo = 0;
+						cambiar_jugador();
+					}
+					verificar_ganador();
+				}
+				if (posmov == -2){
+					deseleccionar_mov(moves,Pini,cantmove);
+					Modo = 0;
+				}
 		}
 
 	}
-	*/
 }
 
-void mostrar_movimientos(struct movimiento moves[],struct posicion P,int cantmove){
-	int i;
-	for (i = 0; i < cantmove + 1; i++){
-		if(tablero_paralelo[moves[i].p.F][moves[i].p.C] == ARENA){
-			gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),moves[i].p.C,moves[i].p.F)), "./img/arenamov.png");
-		}else if(tablero_paralelo[moves[i].p.F][moves[i].p.C] == NEUTRALG){
-			gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),moves[i].p.C,moves[i].p.F)), "./img/neutralmov.png");
-		}else if(tablero_paralelo [moves[i].p.F][moves[i].p.C] == ALBERTH || tablero_paralelo[moves[i].p.F][moves[i].p.C] == HOUSEC){
-			gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),moves[i].p.C,moves[i].p.F)), "./img/goalmov.png");
-		}
-	}
-	if(tablero_paralelo[P.F][P.C] == ARENA){
-		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/arenasel.png");
-	}else if(tablero_paralelo [P.F][P.C]== NEUTRALG){
-		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/neutralsel.png");
-	}else if(tablero_paralelo [P.F][P.C] == ALBERTH || tablero_paralelo[P.F][P.C] == HOUSEC){
-		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/goalsel.png");
-	}
+gboolean agrandar_tablero (GtkWidget* menu_ampliar,GdkEventButton event,gpointer user_data){
+	rescale_tablero(2);
+	return 1;
 }
+gboolean reducir_tablero(GtkWidget* menu_reducir,GdkEventButton event,gpointer user_data){
+	rescale_tablero(1);
+	return 1;
+}
+
 
 void cambiar_jugador(){
 	if (jugador == SUFFRAGETTO){
@@ -144,59 +138,7 @@ GtkWidget *crear_tablero_fichas(){
 	return eventbox;
 }
 
-void obtener_img(GdkPixbuf *pixbuf,char img){
-	if(img == VACIO){
-					pixbuf = gdk_pixbuf_new_from_file("./img/vacio.png" , NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf , pixel , pixel ,GDK_INTERP_BILINEAR);
-				}else if(img == SUFFRAGETTO){
-					pixbuf = gdk_pixbuf_new_from_file("./img/suf.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}else if(img == POLICIA){
-					pixbuf = gdk_pixbuf_new_from_file("./img/pol.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}else if(img == LIDERSU){
-					pixbuf = gdk_pixbuf_new_from_file("./img/lidersu.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}else if(img == INSPECTORP){
-					pixbuf = gdk_pixbuf_new_from_file("./img/inspectorp.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}
-	if(img == ARENA){
-					pixbuf = gdk_pixbuf_new_from_file("./img/arena.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}else if(img == NEUTRALG){
-					pixbuf = gdk_pixbuf_new_from_file("./img/neutral.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}else if(img == HOSPITAL || img == PRISON){
-					pixbuf = gdk_pixbuf_new_from_file("./img/dead.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}else if(img == HGROUNDS || img == PYARD){
-					pixbuf = gdk_pixbuf_new_from_file("./img/yard.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}else if(img == ALBERTH || img == HOUSEC){
-					pixbuf = gdk_pixbuf_new_from_file("./img/goal.png",NULL);
-					pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
-				}
-}
 
-void rescale_tablero(int opcion){
-	int i,j;
-	if(opcion == 1){
-		pixel = pixel/1.35;
-	}
-	if(opcion == 2){
-		pixel = pixel*1.35;
-	}
-	GdkPixbuf *pixbuf;
-	for (i = 0; i < 18; i++) {
-		for (j = 0; j < 18; j++) {
-			obtener_img(pixbuf,tablero_fichas[i][j]);
-			gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(fichas),j,i)), pixbuf);
-			obtener_img(pixbuf,tablero_paralelo[i][j]);
-			gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),j,i)), pixbuf);
-		}
-	}
-}
 
 
 
@@ -279,28 +221,28 @@ void preparar_tablero(){
 	}
 }
 
-void turno(char jugador){
-
-}
 
 
 int verificar_movimiento(struct movimiento moves[],struct posicion Pini, struct posicion Pfin, int cantmov){
 	int i;
-	int band = 0;
 	if (Pini.F == Pfin.F && Pini.C == Pfin.C){ // se verifica si se selecciono la misma casilla
-		band = -1;
+		i = -2;
 	}
-	if (band != -1){
-	for(i = 0; i < (cantmov + 1);i++){ // Se van recorriendo los movimientos posibles y se compara con la posicion a mover
-		if(moves[i].p.F == Pfin.F && moves[i].p.C == Pfin.C){
-			band = 1;
+	if (i != -2){
+		int band = 0;
+		for(i = 0; i < cantmov ;i++){ // Se van recorriendo los movimientos posibles y se compara con la posicion a mover
+			if(moves[i].p.F == Pfin.F && moves[i].p.C == Pfin.C){
+				band = 1;
+			}
+			if (band == 1){
+				break;
+			}
 		}
-		if (band == 1){
-			break;
+		if(band == 0){
+			i = -1;
 		}
 	}
-	}
-	return band;
+	return i;
 }
 
 int Es_ficha_suya(struct posicion pos,char jugador){
@@ -461,7 +403,7 @@ int Es_permitido(int Posx,int Posy){
 	return band;
 }
 
-int verificar_captura(struct movimiento mov,char jugador,char ficha){
+int verificar_captura(struct movimiento mov,char ficha){
 	int band = 0;
 	if(tablero_paralelo[mov.FSaltada.F][mov.FSaltada.C]== ARENA){
 		if(jugador == SUFFRAGETTO){
@@ -489,12 +431,164 @@ int verificar_captura(struct movimiento mov,char jugador,char ficha){
 	return band;
 }
 
-void hacer_captura(int Posx,int Posy){
+void hacer_captura(struct posicion Psaltada){
+	int i,j,band = 0;
+	int posimg;
+	if(jugador == SUFFRAGETTO){
+		for(i = 0;i < 17; i++){
+			for(j = 0;j < 2; j++){
+				if(j == 0 || (j ==  1 && i < 4)){
+					if(tablero_paralelo[i][j] == VACIO){
+						tablero_fichas[i][j] = tablero_fichas[Psaltada.F][Psaltada.C];
+						tablero_fichas[Psaltada.F][Psaltada.C] = VACIO;
+						band = 1;
+						break;
+					}
+				}
+			}
+			if(band == 1){
+				break;
+			}
+		}
+	}else{
+		for(i = 0;i < 17; i++){
+			for(j = 15;j < 17; j++){
+				if(j == 16 || (j ==  15 && i > 12)){
+					if(tablero_paralelo[i][j] == VACIO){
+						tablero_fichas[i][j] = tablero_fichas[Psaltada.F][Psaltada.C];
+						tablero_fichas[Psaltada.F][Psaltada.C] = VACIO;
+						band = 1;
+						break;
+					}
+				}
+			}
+			if(band == 1){
+			break;
+			}
+		}
+	}
+	GdkPixbuf *pixbuf = NULL;
+	posimg = obtener_pos_img(tablero_fichas[i][j]);
+	pixbuf = gdk_pixbuf_new_from_file(imgfichas[posimg],NULL);
+	pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(fichas),j,i)), pixbuf);
 
+	posimg = obtener_pos_img(tablero_fichas[Psaltada.F][Psaltada.C]);
+	pixbuf = gdk_pixbuf_new_from_file(imgfichas[posimg],NULL);
+	pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(fichas),Psaltada.C,Psaltada.F)), pixbuf);
 }
 
 void hacer_movimiento(struct posicion Pini,struct posicion Pfin){
+	tablero_fichas[Pfin.F][Pfin.C] = tablero_fichas[Pini.F][Pini.C];
+	tablero_fichas[Pini.F][Pini.C] = VACIO;
+	int posimg;
+	GdkPixbuf *pixbuf = NULL;
+	posimg = obtener_pos_img(tablero_fichas[Pini.F][Pini.C]);
+	pixbuf = gdk_pixbuf_new_from_file(imgfichas[posimg],NULL);
+	pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(fichas),Pini.C,Pini.F)), pixbuf);
 
+	posimg = obtener_pos_img(tablero_fichas[Pfin.F][Pfin.C]);
+	pixbuf = gdk_pixbuf_new_from_file(imgfichas[posimg],NULL);
+	pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(fichas),Pfin.C,Pfin.F)), pixbuf);
+}
+
+
+void mostrar_movimientos(struct movimiento moves[],struct posicion P,int cantmove){
+	int i;
+	int posimg;
+	GdkPixbuf *pixbuf = NULL;
+	for (i = 0; i < cantmove; i++){
+		posimg = obtener_pos_img(tablero_paralelo[moves[i].p.F][moves[i].p.C]);
+		pixbuf = gdk_pixbuf_new_from_file(imgtableromov[posimg],NULL);
+		pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+		gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),moves[i].p.C,moves[i].p.F)), pixbuf);
+	}
+	if(tablero_paralelo[P.F][P.C] == ARENA){
+		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/arenasel.png");
+	}else if(tablero_paralelo [P.F][P.C]== NEUTRALG){
+		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/neutralsel.png");
+	}else if(tablero_paralelo [P.F][P.C] == ALBERTH || tablero_paralelo[P.F][P.C] == HOUSEC){
+		gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), "./img/goalsel.png");
+	}
+	posimg = obtener_pos_img(tablero_paralelo [P.F][P.C]);
+	pixbuf = gdk_pixbuf_new_from_file(imgtablerosel[posimg],NULL);
+	pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), pixbuf);
+}
+
+void deseleccionar_mov(struct movimiento moves[],struct posicion P,int cantmove){
+	int i;
+	int posimg;
+	GdkPixbuf *pixbuf = NULL;
+	for (i = 0; i < cantmove + 1; i++) {
+			posimg = obtener_pos_img(tablero_paralelo[moves[i].p.F][moves[i].p.C]);
+			pixbuf = gdk_pixbuf_new_from_file(imgtablero[posimg],NULL);
+			pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+			gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),moves[i].p.C,moves[i].p.F)), pixbuf);
+	}
+	posimg = obtener_pos_img(tablero_paralelo[P.F][P.C]);
+	pixbuf = gdk_pixbuf_new_from_file(imgtablero[posimg],NULL);
+	pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),P.C,P.F)), pixbuf);
+}
+
+int obtener_pos_img(char img){
+	int pos;
+	if(img == VACIO){
+		pos = 0;
+	}else if(img == SUFFRAGETTO){
+		pos = 1;
+	}else if(img == POLICIA){
+		pos = 2;
+	}else if(img == LIDERSU){
+		pos = 3;
+	}else if(img == INSPECTORP){
+		pos = 4;
+	}
+	if(img == ARENA){
+		pos = 0;
+	}else if(img == NEUTRALG){
+		pos = 1;
+	}else if(img == ALBERTH || img == HOUSEC){
+		pos = 2;
+	}else if(img == HOSPITAL || img == PRISON){
+		pos = 3;
+	}else if(img == HGROUNDS || img == PYARD){
+		pos = 4;
+	}
+	return pos;
+}
+
+
+
+
+//GtkWidget *widget,GdkEventButton *event, gpointer data
+void rescale_tablero(int opcion){
+	int i,j;
+	int posimg;
+	if(opcion == 1){
+		pixel = pixel/1.35;
+	}
+	if(opcion == 2){
+		pixel = pixel*1.35;
+	}
+	GdkPixbuf *pixbuf = NULL;
+	for (i = 0; i < 18; i++) {
+		for (j = 0; j < 18; j++) {
+			posimg = obtener_pos_img(tablero_fichas[i][j]);
+			pixbuf = gdk_pixbuf_new_from_file(imgfichas[posimg],NULL);
+			pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+			gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(fichas),j,i)), pixbuf);
+
+			posimg = obtener_pos_img(tablero_paralelo[i][j]);
+			pixbuf = gdk_pixbuf_new_from_file(imgtablero[posimg],NULL);
+			pixbuf = gdk_pixbuf_scale_simple (pixbuf,pixel,pixel,GDK_INTERP_BILINEAR);
+			gtk_image_set_from_pixbuf(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(tablero),j,i)), pixbuf);
+		}
+	}
 }
 
 int verificar_ganador(){
@@ -566,12 +660,13 @@ int pedir_numero_entero(int liminf, int limsup){
 	return n;
 }
 
-int main (int argc, char *argv[])
-{
+int main (int argc, char *argv[]){
 	 GtkWidget *window;
 	 GtkWidget *box_tablero;
 	 GtkWidget *overlay;
 	 GtkWidget *box_fichas;
+	 GtkWidget *menu_ampliar;
+	 GtkWidget *menu_reducir;
 
 	    //Para el GtkBuilder
 	    guint ret;
@@ -599,6 +694,11 @@ int main (int argc, char *argv[])
 		box_tablero = GTK_WIDGET(gtk_builder_get_object(builder, "box_tablero"));
 
 		box_fichas = gtk_box_new (GTK_ORIENTATION_VERTICAL,0);
+
+		menu_ampliar = GTK_WIDGET(gtk_builder_get_object(builder, "menu_ampliar"));
+		g_signal_connect (menu_ampliar, "activate", G_CALLBACK(agrandar_tablero),NULL);
+		menu_reducir = GTK_WIDGET(gtk_builder_get_object(builder, "menu_reducir"));
+		g_signal_connect (menu_reducir, "activate", G_CALLBACK(reducir_tablero),NULL);
 
 		gtk_box_pack_start(GTK_BOX(box_tablero), crear_tablero(), TRUE, FALSE, 20);
 

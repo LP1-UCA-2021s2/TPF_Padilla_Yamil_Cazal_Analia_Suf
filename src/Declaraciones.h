@@ -15,6 +15,26 @@
 #define ALBERTH 'h'
 #define HOUSEC 'c'
 
+char imgfichas [][25] = {"./img/vacio.png",
+		"./img/suf.png",
+		"./img/pol.png",
+		"./img/lidersu.png",
+		"./img/inspectorp.png"};
+
+char imgtablero [][25] = {"./img/arena.png",
+		"./img/neutral.png",
+		"./img/goal.png",
+		"./img/dead.png",
+		"./img/yard.png"};
+
+char imgtableromov [][25] = {"./img/arenamov.png",
+		"./img/neutralmov.png",
+		"./img/goalmov.png"};
+
+char imgtablerosel [][25] = {"./img/arenasel.png",
+		"./img/neutralsel.png",
+		"./img/goalsel.png"};
+
 
 struct posicion {
 	int F;
@@ -23,8 +43,8 @@ struct posicion {
 
 struct movimiento {
 	struct posicion p;
-	struct posicion FSaltada;
-	int Saltos;
+	struct posicion FSaltada; //ficha saltada
+	int Saltos;	// numero de saltos
 	};
 
 int pixel = 100;
@@ -35,7 +55,7 @@ char tablero_paralelo[17][18];
 
 char jugador = SUFFRAGETTO;
 
-struct movimiento moves[8];
+
 
 
 // coloca el tablero en la posicion inicial del juego
@@ -43,8 +63,13 @@ void preparar_tablero();
 
 void mostrar_movimientos(struct movimiento moves[],struct posicion P,int cantmove);
 
+void deseleccionar_mov(struct movimiento moves[],struct posicion P,int cantmove);
+
 
 int guardar_movimientos(struct movimiento moves[], struct posicion Pini, int numsalto);
+
+gboolean agrandar_tablero (GtkWidget* self,GdkEventButton event,gpointer user_data);
+gboolean reducir_tablero(GtkWidget* self,GdkEventButton event,gpointer user_data);
 
 void rescale_tablero(int opcion);
 
@@ -68,19 +93,25 @@ int Es_ficha_suya(struct posicion pos,char jugador);
 // Retorna TRUE o FALSE
 int Existe_salto_posible(int Posx,int Posy);
 
+//cambia de turno, si era suffragetto ahora policia, y al reves
+void cambiar_jugador();
+
 //Determina que la posicion este en la arena, Neutral grounds, albert hall o house of commons
 int Es_permitido(int Posxf,int Posyf);
 
 //Determina si hubo una captura de ficha
 // Retorna TRUE o FALSE
 //ficha = tipo de ficha que se mueve
-int verificar_captura(struct movimiento mov,char jugador,char ficha);
+int verificar_captura(struct movimiento mov,char ficha);
 
 //Mueve la ficha capturada al hospital o prision
-void hacer_captura(int Posx,int Posy);
+void hacer_captura(struct posicion Psaltada);
 
 //Mueve la ficha a la posicion seleccionada
 void hacer_movimiento(struct posicion Pini,struct posicion Pfin);
+
+//se obtiene la posicion del vector de direcciones de imagen del char img correspondiente
+int obtener_pos_img(char img);
 
 //Determina si hay un ganador
 //Retorna 0 si no hay ganador, 1 si ganaron los sufraggetos y 2 si ganaron los policias
