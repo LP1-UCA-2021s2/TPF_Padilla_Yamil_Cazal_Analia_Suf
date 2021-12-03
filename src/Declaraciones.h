@@ -15,13 +15,21 @@
 #define ALBERTH 'h'
 #define HOUSEC 'c'
 
-char imgfichas [][25] = {"./img/vacio.png",
+#define MOVNOVALIDO (-1)
+
+#define FICHA 'f'
+#define	CASILLA 'c'
+#define CMOV 'm'
+#define CSEL 's'
+
+
+char *imgfichas []= {"./img/vacio.png",
 		"./img/suf.png",
 		"./img/pol.png",
 		"./img/lidersu.png",
 		"./img/inspectorp.png"};
 
-char imgtablero [][25] = {"./img/arena.png",
+char *imgtablero [] = {"./img/arena.png",
 		"./img/neutral.png",
 		"./img/goal.png",
 		"./img/dead.png",
@@ -44,7 +52,7 @@ struct posicion {
 struct movimiento {
 	struct posicion p;
 	struct posicion FSaltada; //ficha saltada
-	int Saltos;	// numero de saltos
+	int Mtipo;	// tipo de movimiento, mayor a 0 es cantidad de saltos
 	};
 
 int pixel = 100;
@@ -68,8 +76,8 @@ void deseleccionar_mov(struct movimiento moves[],struct posicion P,int cantmove)
 
 int guardar_movimientos(struct movimiento moves[], struct posicion Pini, int numsalto);
 
-gboolean agrandar_tablero (GtkWidget* self,GdkEventButton event,gpointer user_data);
-gboolean reducir_tablero(GtkWidget* self,GdkEventButton event,gpointer user_data);
+void agrandar_tablero (GtkWidget *event_box, GdkEventButton *event, gpointer data);
+void reducir_tablero(GtkWidget *event_box, GdkEventButton *event, gpointer data);
 
 void rescale_tablero(int opcion);
 
@@ -112,6 +120,8 @@ void hacer_movimiento(struct posicion Pini,struct posicion Pfin);
 
 //se obtiene la posicion del vector de direcciones de imagen del char img correspondiente
 int obtener_pos_img(char img);
+
+void cambiar_img(struct posicion pos,char img, char type);
 
 //Determina si hay un ganador
 //Retorna 0 si no hay ganador, 1 si ganaron los sufraggetos y 2 si ganaron los policias
