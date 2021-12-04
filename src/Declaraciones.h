@@ -22,26 +22,9 @@
 #define CMOV 'm'
 #define CSEL 's'
 
-
-char *imgfichas []= {"./img/vacio.png",
-		"./img/suf.png",
-		"./img/pol.png",
-		"./img/lidersu.png",
-		"./img/inspectorp.png"};
-
-char *imgtablero [] = {"./img/arena.png",
-		"./img/neutral.png",
-		"./img/goal.png",
-		"./img/dead.png",
-		"./img/yard.png"};
-
-char imgtableromov [][25] = {"./img/arenamov.png",
-		"./img/neutralmov.png",
-		"./img/goalmov.png"};
-
-char imgtablerosel [][25] = {"./img/arenasel.png",
-		"./img/neutralsel.png",
-		"./img/goalsel.png"};
+#define PUNMOV 0 //puntaje de movimiento
+#define PUNLOST 1 // puntaje perdido
+#define PUNCOM 2 // puntaje por comer fichas
 
 
 struct posicion {
@@ -51,9 +34,20 @@ struct posicion {
 
 struct movimiento {
 	struct posicion p;
-	struct posicion FSaltada; //ficha saltada
-	int Mtipo;	// tipo de movimiento, mayor a 0 es cantidad de saltos
+	struct posicion FSaltada; // posicion ficha saltada
+	int Mtipo;	// tipo de movimiento, mayor a 0 es normal, mayor a cero cantidad de saltos
 	};
+
+
+
+struct posicion Fichassuf[21]; // posiciones de las fichas de sufraggeto
+struct posicion Fichaspol[21];// posiciones de las fichas de policias
+int estadodeficha[21];// indica si estan vivas o muertas las fichas paralelas al vector posiciones, 0 muertas, 1 vivas
+struct movimiento Mejoresmovs[3][21]; // movimiento con mayor puntaje de cada ficha
+int puntajes[21]; //puntaje de los movimientos
+struct posicion sufobj; //referencia de puntaje de distancia para sufraggetos
+struct posicion polobj;//referencia de puntaje de distancia para policias
+void guardar_mejor_mov(int posvec,struct posicion P, int * puntajemax);
 
 int pixel = 100;
 
@@ -63,7 +57,10 @@ char tablero_paralelo[17][18];
 
 char jugador = SUFFRAGETTO;
 
-
+#define JUGADOR 'j'
+#define CPU 'c'
+char controlsuf = JUGADOR;
+char controlpol = CPU;
 
 
 // coloca el tablero en la posicion inicial del juego

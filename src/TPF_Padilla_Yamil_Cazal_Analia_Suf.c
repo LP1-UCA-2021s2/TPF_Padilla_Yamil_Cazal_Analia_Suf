@@ -22,6 +22,8 @@ GtkWidget *label_estado;
 GtkWidget *tablero;
 GtkWidget *fichas;
 
+
+
 void tablero_cb(GtkWidget *event_box, GdkEventButton *event, gpointer data){
 	guint i,j;
 	int posmov;
@@ -35,7 +37,7 @@ void tablero_cb(GtkWidget *event_box, GdkEventButton *event, gpointer data){
 	static struct posicion Pini;
 	P.F = i;
 	P.C = j;
-
+	//mov_CPU();
 	if (Modo == 0){
 		bandyahizomov = 0;
 		if (Es_ficha_suya(P,jugador)){
@@ -82,6 +84,17 @@ void tablero_cb(GtkWidget *event_box, GdkEventButton *event, gpointer data){
 
 	}
 }
+
+/*void mov_cpu(){
+	int pos;
+	if (jugador == SUFFRAGETTO && controlsuf == CPU){
+		pos = hallar_mov_CPU();
+	}
+	if (jugador == POLICIA && controlpol == CPU){
+		pos = hallar_mov_CPU();
+	}
+}
+*/
 
 void agrandar_tablero (GtkWidget *event_box, GdkEventButton *event, gpointer data){
 	rescale_tablero(2);
@@ -512,33 +525,6 @@ void deseleccionar_mov(struct movimiento moves[],struct posicion P,int cantmove)
 	cambiar_img(P,tablero_paralelo[P.F][P.C] , CASILLA);
 }
 
-int obtener_pos_img(char img){
-	int pos;
-	if(img == VACIO){
-		pos = 0;
-	}else if(img == SUFFRAGETTO){
-		pos = 1;
-	}else if(img == POLICIA){
-		pos = 2;
-	}else if(img == LIDERSU){
-		pos = 3;
-	}else if(img == INSPECTORP){
-		pos = 4;
-	}
-	if(img == ARENA){
-		pos = 0;
-	}else if(img == NEUTRALG){
-		pos = 1;
-	}else if(img == ALBERTH || img == HOUSEC){
-		pos = 2;
-	}else if(img == HOSPITAL || img == PRISON){
-		pos = 3;
-	}else if(img == HGROUNDS || img == PYARD){
-		pos = 4;
-	}
-	return pos;
-}
-
 
 void cambiar_img(struct posicion pos,char img, char type){
 	GdkPixbuf *pixbuf = NULL;
@@ -685,20 +671,31 @@ int verificar_ganador(){
 	return band;
 }
 
-struct posicion Fichassuf[21];
-struct posicion Fichaspol[21];
-int estadodeficha[21];
-struct movimiento Mejoresmovs[3][21];
-int puntajes[21];
-void guardar_mejor_mov(struct posicion P, int * puntajemax);
+
 
 int hallar_mov_CPU(){
+	sufobj.F = 3;
+	sufobj.C = 8;
+	polobj.F = 2;
+	polobj.C = 13;
 	int i;
+	char bando;
+	int * puntaje;
 	int posmejormov;
 	int bandvalorasig = 0;
+	puntaje = puntajes;
+	if(jugador == SUFFRAGETTO){
+		bando = SUFFRAGETTO;
+	}else{
+		bando = POLICIA;
+	}
 	for(i = 0; i < 21; i++){
 		if(estadodeficha[i] == 1){
-			guardar_mejor_mov();
+			if(bando == SUFFRAGETTO){
+			guardar_mejor_mov(i,Fichassuf[i],(puntaje+i));
+			}else{
+				guardar_mejor_mov(i,Fichaspol[i],(puntaje+i));
+			}
 		}else{
 			Mejoresmovs[i][0].Mtipo = MOVNOVALIDO;
 		}
@@ -720,9 +717,7 @@ int hallar_mov_CPU(){
 	return posmejormov;
 }
 
-#define PUNMOV 0
-#define PUNLOST 1
-#define PUNCOM 2
+
 void guardar_mejor_mov(int posvec,struct posicion P, int * puntajemax){
 	int i,j,z,cantmov;
 	struct movimiento Allmov[3][8];
@@ -739,18 +734,18 @@ void guardar_mejor_mov(int posvec,struct posicion P, int * puntajemax){
 		for(i = 0;i < cantmov; i++){
 			if(Allmov[0][i].Mtipo > 0 ){//si es un salto
 				cantmovtemp =  guardar_movimientos(movtemp, Allmov[0][i].p, Allmov[0][i].Mtipo);
-				puntajes[PUNMOV][i] = calcularpuntaje(Allmov[0][i],PUNMOV);
-				puntajes[PUNLOST][i] = calcularpuntaje(Allmov[0][i],PUNLOST);
-				puntajes[PUNCOM][i] = calcularpuntaje(Allmov[0][i],PUNCOM);
+				puntajes[PUNMOV][i] = calcularpuntaje(P,Allmov[0][i],PUNMOV);
+				puntajes[PUNLOST][i] = calcularpuntaje(P,Allmov[0][i],PUNLOST);
+				puntajes[PUNCOM][i] = calcularpuntaje(P,Allmov[0][i],PUNCOM);
 				if(cantmovtemp){ // si hay movimientos posibles
 					z = 1;
 					while(continuar == 1){
 						if(cantmovtemp){
 							if (z < 3){
 								for(j = 0;j < cantmovtemp; j++){
-									puntajestemp[PUNMOV][j] = calcularpuntaje(movtemp[j],PUNMOV);
-									puntajestemp[PUNLOST][j] = calcularpuntaje(movtemp[j],PUNLOST);
-									puntajestemp[PUNCOM][j] = calcularpuntaje(movtemp[j],PUNCOM) + puntajes[PUNCOM][i];
+									puntajestemp[PUNMOV][j] = calcularpuntaje(Allmov[z-1][i].p,movtemp[j],PUNMOV);
+									puntajestemp[PUNLOST][j] = calcularpuntaje(Allmov[z-1][i].p,movtemp[j],PUNLOST);
+									puntajestemp[PUNCOM][j] = calcularpuntaje(Allmov[z-1][i].p,movtemp[j],PUNCOM) + puntajes[PUNCOM][i];
 								}
 								for(j = 0; j < cantmovtemp;j++){
 									if(j == 0){
@@ -807,10 +802,143 @@ void guardar_mejor_mov(int posvec,struct posicion P, int * puntajemax){
 				}
 			}
 		}
-
+		for(i = 0; i < 3;i++){
+			Mejoresmovs[i][posvec].p.F = Allmov[i][posmejormov].p.F;
+			Mejoresmovs[i][posvec].p.C = Allmov[i][posmejormov].p.C;
+			Mejoresmovs[i][posvec].FSaltada.F = Allmov[i][posmejormov].FSaltada.F ;
+			Mejoresmovs[i][posvec].FSaltada.C = Allmov[i][posmejormov].FSaltada.C;
+			Mejoresmovs[i][posvec].Mtipo = Allmov[i][posmejormov].Mtipo;
+		}
+		*puntajemax = puntajes[PUNMOV][posmejormov] +puntajes[PUNCOM][posmejormov] + puntajes[PUNLOST][posmejormov];
 	}else{
 		Mejoresmovs[0][posvec].Mtipo = MOVNOVALIDO;
 	}
+}
+
+int calcularpuntaje(struct posicion Pini,struct movimiento mov,int type){
+	int puntaje = 0;
+	int d_actx,d_acty,d_movx,d_movy,diffx,diffy;
+	if(type == PUNMOV){
+		if(jugador == SUFFRAGETTO){
+			d_actx = - Pini.F  + sufobj.F;
+			if(d_actx < 0){
+				d_actx = d_actx*-1;
+			}
+			d_acty = - Pini.C  + sufobj.C;
+			if(d_acty < 0){
+				d_acty = d_acty*-1;
+			}
+			d_movx = - mov.p.F  + sufobj.F;
+			if(d_movx < 0){
+				d_movx = d_movx*-1;
+			}
+			d_movy = - mov.p.C  + sufobj.C;
+			if(d_movy < 0){
+				d_movy = d_movy*-1;
+			}
+			diffx = d_actx - d_movx;
+			if(diffx > 0){
+				diffx = diffx*-1;
+			}
+			diffy = d_acty - d_movy;
+			if(diffy > 0){
+				diffy = diffy*-1;
+			}
+			puntaje = diffx+diffy;
+		}else{
+			d_actx = - Pini.F  + polobj.F;
+			if(d_actx < 0){
+				d_actx = d_actx*-1;
+			}
+			d_acty = - Pini.C  + polobj.C;
+			if(d_acty < 0){
+				d_acty = d_acty*-1;
+			}
+			d_movx = - mov.p.F  + polobj.F;
+			if(d_movx < 0){
+				d_movx = d_movx*-1;
+			}
+			d_movy = - mov.p.C  + polobj.C;
+			if(d_movy < 0){
+				d_movy = d_movy*-1;
+			}
+			diffx = d_actx - d_movx;
+			if(diffx > 0){
+				diffx = diffx*-1;
+			}
+			diffy = d_acty - d_movy;
+			if(diffy > 0){
+				diffy = diffy*-1;
+			}
+			puntaje = diffx+diffy;
+		}
+	}else if(type == PUNLOST){
+		int i,j;
+		puntaje = 0;
+		if(tablero_paralelo[Pini.F][Pini.C] == ARENA){
+			for(i = mov.p.F - 1;i < mov.p.F+2;i++){
+				for(j = mov.p.C- 1; j < mov.p.C +2;j++){
+					if(!(i == Pini.F && j == Pini.C)){
+						if (Es_permitido(i, j)){
+							if(jugador == POLICIA &&(tablero_fichas[i][j]== SUFFRAGETTO ||tablero_fichas[i][j]== LIDERSU)){
+								if(tablero_fichas[posicion_salto(i,mov.p.F)][posicion_salto(j,mov.p.C)] == VACIO){
+									if(tablero_fichas[i][j]!= LIDERSU){
+										if((i - mov.p.F) != 0 && (j - mov.p.C) != 0 ){
+											if(tablero_fichas[Pini.F][Pini.C] == POLICIA){
+												puntaje = -12;
+											}else{
+												puntaje = -24;
+											}
+										}
+									}else{
+										if(tablero_fichas[Pini.F][Pini.C] == POLICIA){
+											puntaje = -12;
+										}else{
+											puntaje = -24;
+										}
+									}
+							}
+						}else if(jugador == SUFFRAGETTO &&(tablero_fichas[i][j]== POLICIA ||tablero_fichas[i][j]== INSPECTORP)){
+							if(tablero_fichas[posicion_salto(i,mov.p.F)][posicion_salto(j,mov.p.C)] == VACIO){
+								if(tablero_fichas[i][j]!= INSPECTORP){
+									if((i - mov.p.F) != 0 && (j - mov.p.C) != 0 ){
+										if(tablero_fichas[Pini.F][Pini.C] == SUFFRAGETTO){
+											puntaje = -12;
+										}else{
+											puntaje = -24;
+										}
+									}
+								}else{
+									if(tablero_fichas[Pini.F][Pini.C] == SUFFRAGETTO){
+										puntaje = -12;
+										puntaje = -24;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}else if(type == PUNCOM){
+		if(verificar_captura(mov, tablero_fichas[Pini.F][Pini.C])){
+			if(jugador == SUFFRAGETTO){
+				if( tablero_fichas[mov.FSaltada.F][mov.FSaltada.F] == POLICIA){
+					puntaje = 8;
+				}else if(tablero_fichas[mov.FSaltada.F][mov.FSaltada.F] == INSPECTORP){
+					puntaje = 15;
+				}
+			}else{
+				if( tablero_fichas[mov.FSaltada.F][mov.FSaltada.F] == SUFFRAGETTO){
+					puntaje = 8;
+				}else if(tablero_fichas[mov.FSaltada.F][mov.FSaltada.F] == LIDERSU){
+					puntaje = 15;
+				}
+			}
+		}
+	}
+	}
+	return puntaje;
 }
 
 int numero_random(int limsup){
